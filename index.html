@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Mississippi Broadband Spending</title>
+<meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+<link href="https://api.mapbox.com/mapbox-gl-js/v2.6.0/mapbox-gl.css" rel="stylesheet">
+<script src="https://api.mapbox.com/mapbox-gl-js/v2.6.0/mapbox-gl.js"></script>
+<style>
+body { margin: 0; padding: 0; }
+#map { position: absolute; top: 0; bottom: 0; width: 100%; }
+</style>
+</head>
+<body>
+<style>
+    #menu {
+    position: absolute;
+    background: #efefef;
+    padding: 10px;
+    font-family: 'Open Sans', sans-serif;
+    }
+
+  .mapboxgl-popup {
+        max-width: 400px;
+        font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+    }
+  
+  .map-overlay {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      background: #fff;
+      margin-right: 20px;
+      font-family: Arial, sans-serif;
+      overflow: auto;
+      border-radius: 3px;
+      }
+  
+  #legend {
+      padding: 10px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      line-height: 18px;
+      height: 125px;
+      margin-bottom: 40px;
+      width: 375px;
+      }
+  .legend-key {
+      display: inline-block;
+      border-radius: 20%;
+      width: 10px;
+      height: 10px;
+      margin-right: 5px;
+      }
+  
+</style>
+<!-- Load the `mapbox-gl-geocoder` plugin. -->
+<script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.7.2/mapbox-gl-geocoder.min.js"></script>
+<link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.7.2/mapbox-gl-geocoder.css" type="text/css">
+
+<div id="map"></div>  
+  
+<div id="menu">
+      <input onChange="onLayerSwitch(this)" id="districts" type="radio" name="rtoggle" value="schools-on" checked="checked">
+      <label for="districts">School Districts</label>
+      <input onChange="onLayerSelect(this)" id="coops" type="radio" name="rtoggle" value="coops-on">
+      <label for="coops">Electric Co-ops</label>
+</div>
+
+<div class="map-overlay" id="legend"></div>
+  
+<script>
+	mapboxgl.accessToken = 'pk.eyJ1IjoibXNjZW50ZXJmb3JqdXN0aWNlIiwiYSI6ImNrdzlvbWw1eTFscGYzMHBwb2l5emJrMG8ifQ.-xo4JnrLP6IcdzgoWB-7CQ';
+    const map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/mscenterforjustice/ckw9r5if30yro14pivbvwyk6d?fresh=true',
+        center: [-89.72321, 32.65197],
+        zoom: 6.25
+    });
+
+    // Wait until the map has finished loading.
+    map.on('load', () => {
+        
+        map.addSource('districts', {
+            type: 'vector',
+            url: 'mapbox://mscenterforjustice.5euz5i3z'
+        });
+      
+      map.addSource('coops', {
+            type: 'vector',
+            url: 'mapbox://mscenterforjustice.3pj75o9u'
+        });
+      
+      map.addSource('blocks', {
+            type: 'vector',
+            url: 'mapbox://mscenterforjustice.dknown2n'
+        });
+      
+      map.addLayer({
+            'id': 'schools-on',
+            'type': 'fill',
+            'source': 'districts',
+            'layout': {
+                // Make the layer visible by default.
+                'visibility': 'visible'
+            },
+            'paint': {
+              'fill-color': [
+                "step",
+                  [
+                    "get",
+                    "Districts_MS_Broadband_FINAL_Expend_prcnt_SB3044_HB 1797"
+                  ],
+                  "hsl(295, 78%, 73%)",
+                  0.4,
+                  "hsl(295, 78%, 73%)",
+                  0.75,
+                  "hsl(266, 78%, 71%)",
+                  1,
+                  "hsl(235, 86%, 60%)"
+                ],
+            'fill-outline-color': "#48087d",
+            'fill-opacity': 0.7
+            },
+            'source-layer': 'MS_Districts_FINAL'
+        }, 'tunnel-street-minor-low');
+
+      // Add coops-stroke layer
+        map.addLayer({
+            'id': 'coops-stroke',
+            'type': 'line',
+            'source': 'coops',
+            'layout': {
+              'visibility': 'none'
+            },
+            'paint': {
+            'line-color': "#23490e",
+            'line-width': 1.2
+            },
+            'source-layer': 'MS_Coops_FINAL'
+        }, 'school-districts-stroke');
+      
+      // Add census-blocks layer
+        map.addLayer({
+            'id': 'eligible-blocks',
+            'type': 'fill',
+            'source': 'blocks',
+            'layout': {
+              'visibility': 'none'
+            },
+            'paint': {
+            'fill-color': "#000000",
+            'fill-outline-color': [
+                "case",
+                [
+                  "has",
+                  "Blocks_MS_Broadband_FINAL_Coop"
+                ],
+                "#000000",
+                "hsla(0, 0%, 0%, 0)"
+              ],
+            'fill-opacity': [
+                "case",
+                [
+                  "has",
+                  "Blocks_MS_Broadband_FINAL_Coop"
+                ],
+                0.3,
+                0
+              ]
+            },
+            'source-layer': 'MS_Blocks_FINAL'
+        }, 'waterway-label');
+      
+      // Add coops layer
+        map.addLayer({
+            'id': 'coops-on',
+            'type': 'fill',
+            'source': 'coops',
+            'layout': {
+              'visibility': 'none'
+            },
+            'paint': {
+            'fill-outline-color': "#23490e",
+            'fill-opacity': [
+                "case",
+                [
+                  "has",
+                  "Coops_MS_Broadband_FINAL_Expended_prcnt"
+                ],
+                1,
+                0
+              ],
+            'fill-color': [
+                "step",
+                  [
+                    "get",
+                    "Coops_MS_Broadband_FINAL_Expended_prcnt"
+                  ],
+                  "hsla(0, 0%, 0%, 0)",
+                  0.9,
+                  "hsl(100, 76%, 84%)",
+                  0.99,
+                  "hsl(102, 53%, 56%)",
+                  1.01,
+                  "hsl(100, 98%, 24%)"
+                ]
+            },
+            'source-layer': 'MS_Coops_FINAL'
+        }, 'coops-stroke');
+      
+      // define layer names
+          const layers = [
+          'School district funding, 50-74% spent ',
+          'School district funding, 75 - 99% spent ',
+          'School district funding, over 100% spent ',
+          'Electric coop funding, 90-98% spent',
+          'Electric coop funding, 99-100% spent',
+          'Electric coop funding, over 100% spent',
+          'Census blocks eligible for Electric coop funding'
+          ];
+          const colors = [
+          '#e784f0',
+          '#ad7bef',
+          '#4150f1',
+          '#ccf5b7',
+          '#77ca53',
+          '#297901',
+          '#A7A8A8'
+          ];
+
+          // create legend
+          const legend = document.getElementById('legend');
+
+          layers.forEach((layer, i) => {
+          const color = colors[i];
+          const item = document.createElement('div');
+          const key = document.createElement('span');
+          key.className = 'legend-key';
+          key.style.backgroundColor = color;
+
+          const value = document.createElement('span');
+          value.innerHTML = `${layer}`;
+          item.appendChild(key);
+          item.appendChild(value);
+          legend.appendChild(item);
+          });
+      
+    });
+
+     // After the last frame rendered before the map enters an "idle" state.
+      map.on("idle", () => {
+         // If these two layers were not added to the map, abort
+     if (
+          !map.getLayer("coops-on") ||
+          !map.getLayer("schools-on")
+        ) {
+          return;
+        }
+    });
+  
+  // Add radio toggle functionality
+  
+  function onLayerSelect(e) {
+        console.log(e.value);
+    if (e.value="coops-on") {
+        map.setLayoutProperty("coops-on", "visibility", "visible");
+        map.setLayoutProperty("coops-stroke", "visibility", "visible");
+        map.setLayoutProperty("eligible-blocks", "visibility", "visible");
+        map.setLayoutProperty("schools-on", "visibility", "none");
+    }
+  }
+  
+  function onLayerSwitch(e) {
+        console.log(e.value);
+    if (e.value="schools-on") {
+        map.setLayoutProperty("schools-on", "visibility", "visible");
+        map.setLayoutProperty("coops-stroke", "visibility", "none");
+        map.setLayoutProperty("eligible-blocks", "visibility", "none");
+        map.setLayoutProperty("coops-on", "visibility", "none");
+    }
+  }
+
+  // Add pop-ups for polygon layer from style
+
+        map.on('load', function() {
+        
+        // When a click event occurs on a feature in the layer, open a popup at the
+        // location of the click, with description HTML from its properties.
+        map.on('click', 'schools-on', function(e) {
+        new mapboxgl.Popup()
+        .setLngLat(e.lngLat)
+        .setHTML('<h3>' + e.features[0].properties.Districts_MS_Broadband_FINAL_NAME + '</h3><p>Percent of allocation spent: ' + e.features[0].properties.Districts_MS_Broadband_FINAL_Popup_Percent + '%' + '</p><p> Amount allocated: $' + e.features[0].properties.Districts_MS_Broadband_FINAL_Popup_Allocated + '</p><p>Amount spent: $' + e.features[0].properties.Districts_MS_Broadband_FINAL_Popup_Spent + '</p>')
+        .addTo(map);
+        });
+        
+        });
+  // Add pop-ups for polygon layer from style
+
+        map.on('load', function() {
+        
+        // When a click event occurs on a feature in the layer, open a popup at the
+        // location of the click, with description HTML from its properties.
+        map.on('click', 'coops-on', function(e) {
+        new mapboxgl.Popup()
+        .setLngLat(e.lngLat)
+        .setHTML('<h3>' + e.features[0].properties.Coops_MS_Broadband_FINAL_Coop_Name + '</h3><p>Percent of allocation spent: ' + e.features[0].properties.Coops_MS_Broadband_FINAL_Popup_Percent + '%' + '</p><p> Amount allocated: ' + e.features[0].properties.Coops_MS_Broadband_FINAL_Popup_Allocated + '</p><p>Amount spent: ' + e.features[0].properties.Coops_MS_Broadband_FINAL_Popup_Spent + '</p>')
+        .addTo(map);
+        });
+        
+        });
+
+  
+  // Add zoom and rotation controls to the map.
+map.addControl(new mapboxgl.NavigationControl());
+  
+    // Add the control to the map.
+map.addControl(
+    new MapboxGeocoder({
+    accessToken: mapboxgl.accessToken,
+    mapboxgl: mapboxgl
+    }), 'bottom-left');
+  
+
+  
+</script>
+
+</body>
+</html>
